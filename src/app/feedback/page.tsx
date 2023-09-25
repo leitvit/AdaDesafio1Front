@@ -1,7 +1,8 @@
 'use client'
 
-import { Layout, Card, Typography, Form, Row, Col, Button, Input, Select } from 'antd'
+import { Layout, Card, Typography, Form, Row, Col, Button, Input, Select, message } from 'antd'
 import feedbackApi, { Feedback } from '@/api/feedbackApi';
+import { useEffect, useState } from 'react';
 
 const layout = {
   labelCol: { span: 8 },
@@ -14,23 +15,35 @@ const validateMessages = {
 };
 /* eslint-enable no-template-curly-in-string */
 
-const onFinish = (values: Feedback) => {
-  try {
-    // Faça a chamada à API REST aqui
-    const response = feedbackApi.postFeedback(values);
-
-    console.log(response);
-
-  } catch (error) {
-    console.error('Erro ao chamar a API:', error);
-  }
-};
 
 export default function FeedBack() {
 
+  const [messageApi, contextHolder] = message.useMessage();
+  const [messageId, setMessageId] = useState<string | undefined>(undefined);
+
+  const onFinish = (values: Feedback) => {
+    try {
+      // Faça a chamada à API REST aqui
+      const response = feedbackApi.postFeedback(values);
+      response.then(response => {
+        const { messageId } = response.data;
+        setMessageId(messageId);
+      })
+
+    } catch (error) {
+      console.error('Erro ao chamar a API:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!!messageId) {
+      messageApi.info(`Feedback postado! Retorno: ${messageId}`)
+    }
+  }, [messageApi, messageId])
 
   return (
     <main>
+      {contextHolder}
       <Layout style={{ width: '100%', height: '100vh' }}>
         <Row>
           <Col span={12} offset={6}>
