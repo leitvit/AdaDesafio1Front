@@ -1,14 +1,16 @@
 'use client'
 
 import queueApi, { MessageInfoResponse } from "@/api/queueApi";
-import { Card, Col, Layout, Row, Select, Typography } from "antd"
+import { Card, Col, Layout, Row, Select, Typography, message } from "antd"
 import React, { useEffect, useState } from "react";
 
 export default function Queue() {
 
+  const [messageApi, contextHolder] = message.useMessage();
   const [queueSize, setQueueSize] = useState<any>(undefined);
   const [queueInfo, setQueueInfo] = useState<MessageInfoResponse[] | undefined>(undefined);
   const [type, setType] = useState<any | undefined>(undefined);
+  const [err, setErr] = useState<string | undefined>(undefined);
 
   const handleTypeChange = (e: Event) => {
     setType(e);
@@ -17,22 +19,35 @@ export default function Queue() {
   useEffect(() => {
     if (!!type) {
       let size = queueApi.getApproxQueueSize({ feedbackType: type });
-      size.then((response) => setQueueSize(response.data));
+      size
+        .then((response) => setQueueSize(response.data))
+        .catch(response => setErr('Error! Try again after drinking some water.'));
     }
   }, [type]);
 
   useEffect(() => {
     if (queueSize?.queueApproxSize > 0) {
-      let info = queueApi.getQueueInfo({ feedbackType: 'ELOGIO' });
+      let info = queueApi.getQueueInfo({ feedbackType: type });
       info.then((response) => {
         const { allMessagesAttributes } = response;
         setQueueInfo(allMessagesAttributes)
-      });
+      })
+        .catch(response => setErr('Error! Try again after smoking a cigarette.'));
+    } else {
+      setQueueInfo(undefined);
+      setErr(undefined);
     }
-  }, [queueSize])
+  }, [type, queueSize])
+
+  useEffect(() => {
+    if (!!err) {
+      messageApi.error(err);
+    }
+  }, [messageApi, err])
 
   return (
     <main>
+      {contextHolder}
       <Layout style={{ width: '100%', height: '100vh' }}>
         <Row>
           <Col span={12} offset={6}>
@@ -56,7 +71,7 @@ export default function Queue() {
                   return <React.Fragment key={idx + info.messageId}>
                     <Typography>{`message: ${idx}`}</Typography>
                     <Typography>{JSON.stringify(info)}</Typography>
-                    <hr/>
+                    <hr />
                   </React.Fragment>
                 })
                 }
